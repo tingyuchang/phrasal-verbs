@@ -6,35 +6,59 @@ package cmd
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "delete verb in data",
+	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("delete called")
+		key, _ := cmd.Flags().GetString("key")
+
+		if key == "" {
+			fmt.Println("Please enter valid key")
+			return
+		}
+
+		_, ok := index[key]
+
+		if !ok {
+			fmt.Println(key, " not found")
+			return
+		}
+
+		err := deleteRecord(key)
+
+		if err != nil {
+			fmt.Println("Delete failed ", err)
+			return
+		}
+		fmt.Printf("%s has been deleted. \n", key)
+
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(deleteCmd)
+	deleteCmd.Flags().StringP("key", "k", "", "search key for query verb's name")
+}
 
-	// Here you will define your flags and configuration settings.
+func deleteRecord(key string) error {
+	// remove form data
+	data[index[key]] = data[len(data)-1]
+	data = data[:len(data)-1]
+	//remove index
+	delete(index, key)
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// deleteCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// rebuild index
+	createIndex()
+	// save to file
+	err := saveCSVFile(CSVFILE)
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	if err != nil {
+		return err
+	}
+	return nil
 }
