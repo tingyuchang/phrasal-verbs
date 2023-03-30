@@ -6,35 +6,70 @@ package cmd
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
 // updateCmd represents the update command
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "update data",
+	Long:  `update existing data in the applecation`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("update called")
+		name, _ := cmd.Flags().GetString("name")
+		if name == "" {
+			fmt.Println("Please enter valid verb.")
+			return
+		}
+
+		_, ok := index[name]
+
+		if !ok {
+			fmt.Printf("%s not found\n", name)
+			return
+		}
+
+		verb := data[index[name]]
+
+		description, _ := cmd.Flags().GetString("description")
+
+		if description != "" {
+			verb.Description = description
+		}
+
+		example, _ := cmd.Flags().GetString("example")
+
+		if example != "" {
+			if verb.Example1 == "" {
+				verb.Example1 = example
+			} else {
+				verb.Example2 = example
+			}
+		}
+
+		err := update(&verb)
+
+		if err != nil {
+			fmt.Printf("Update %s failure\n", verb.Name)
+			return
+		}
+
+		fmt.Printf("Update %s success!\n", verb.Name)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(updateCmd)
+	updateCmd.Flags().StringP("name", "n", "", "phrasal verb value")
+	updateCmd.Flags().StringP("description", "d", "", "phrasal verb definition")
+	updateCmd.Flags().StringP("example", "e", "", "example sentence for phrasal verbs.")
+}
 
-	// Here you will define your flags and configuration settings.
+func update(p *PhrasalVerb) error {
+	data[index[p.Name]] = *p
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// updateCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// updateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	err := saveCSVFile(CSVFILE)
+	if err != nil {
+		return err
+	}
+	return nil
 }
