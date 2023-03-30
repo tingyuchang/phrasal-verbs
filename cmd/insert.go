@@ -6,35 +6,88 @@ package cmd
 
 import (
 	"fmt"
-
+	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 // insertCmd represents the insert command
 var insertCmd = &cobra.Command{
 	Use:   "insert",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "insert new data",
+	Long:  `this command inserts new phrasal verb into application`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("insert called")
+		name, _ := cmd.Flags().GetString("name")
+
+		if name == "" {
+			fmt.Println("Please enter valid words")
+			return
+		}
+
+		description, _ := cmd.Flags().GetString("description")
+
+		if description == "" {
+			fmt.Println("Please enter valid description")
+			return
+		}
+
+		example1, _ := cmd.Flags().GetString("example")
+
+		verb := InitVerb(name, description, example1, "")
+
+		if verb == nil {
+			fmt.Println("Not a valid record ", verb)
+			return
+		}
+
+		err := insert(verb)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Printf("%s has been added into file\n", verb.Name)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(insertCmd)
+	insertCmd.Flags().StringP("name", "n", "", "phrasal verb value")
+	insertCmd.Flags().StringP("description", "d", "", "phrasal verb definition")
+	insertCmd.Flags().StringP("example", "e", "", "example sentence for phrasal verbs.")
+}
 
-	// Here you will define your flags and configuration settings.
+func insert(p *PhrasalVerb) error {
+	// check exist or not
+	_, ok := index[p.Name]
+	if ok {
+		return fmt.Errorf("%s already exists. ", p.Name)
+	}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// insertCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// add to cache
+	data = append(data, *p)
+	index[p.Name] = len(data) - 1
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// insertCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// save to file
+	err := saveCSVFile(CSVFILE)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func saveCSVFile(filePath string) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	err = gocsv.MarshalFile(data, f)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

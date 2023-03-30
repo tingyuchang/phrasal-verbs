@@ -20,3 +20,17 @@ func (p PhrasalVerbs) Less(i, j int) bool {
 func (p PhrasalVerbs) Swap(i, j int) {
 	p[i], p[j] = p[j], p[i]
 }
+
+func InitVerb(name, description, example1, example2 string) *PhrasalVerb {
+	// Both of them should have a value
+	if name == "" || description == "" {
+		return nil
+	}
+
+	return &PhrasalVerb{
+		Name:        name,
+		Description: description,
+		Example1:    example1,
+		Example2:    example2,
+	}
+}

@@ -22,3 +22,7 @@
 
 # IDE
 .idea/
+
+
+# data
+data.csv
